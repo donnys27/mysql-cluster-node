@@ -1,0 +1,6 @@
+type: update
+jpsVersion: '1.0.0'
+name: MariaDB Node
+
+baseUrl: https://raw.githubusercontent.com/donnys27/mysql-cluster-node/master
+
