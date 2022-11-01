@@ -4,3 +4,5 @@ name: MariaDB Node
 
 baseUrl: https://raw.githubusercontent.com/donnys27/mysql-cluster-node/master
 
+targetNodes:
+  nodeType: mysql
