@@ -7,10 +7,14 @@ baseUrl: https://raw.githubusercontent.com/donnys27/mysql-cluster-node/master
 settings:
   fields:
    - type: list
+     name: nodeid
+     required: true
      caption: MariaDB Node
      values:
-      value1: "${nodes.sqldb[0].id}"
-      value2: "${nodes.sqldb[1].id}"
+      - value: "${nodes.sqldb[0].id}"
+        caption: MariaDB Master 1
+      - value2: "${nodes.sqldb[1].id}"
+        caption: MariaDB Master 2
 
 #onInstall:
 
