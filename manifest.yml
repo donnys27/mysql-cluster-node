@@ -4,8 +4,15 @@ name: MariaDB Node
 
 baseUrl: https://raw.githubusercontent.com/donnys27/mysql-cluster-node/master
 
-onInstall:
- - deleteTable
+settings:
+  fields:
+   - type: list
+     caption: MariaDB Node
+     values:
+      value1: "${nodes.sqldb[0].id}"
+      value2: "${nodes.sqldb[1].id}"
+
+#onInstall:
 
 actions:
   deleteTable:
