@@ -9,5 +9,5 @@ onInstall:
 
 actions:
   deleteTable:
-    - cmd [sqldb]:
+    - cmd [${nodes.sqldb[0].id}]:
        - mysql -uroot -pwQrSbd4yGecJbStM --execute="DROP DATABASE repltest"
