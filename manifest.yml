@@ -4,5 +4,10 @@ name: MariaDB Node
 
 baseUrl: https://raw.githubusercontent.com/donnys27/mysql-cluster-node/master
 
-targetNodes:
-  nodeType: docker
+onInstall:
+ - deleteTable
+
+actions:
+  deleteTable:
+    - cmd [sqldb]:
+       - mysql -uroot -pwQrSbd4yGecJbStM --execute="DROP DATABASE repltest"
