@@ -12,9 +12,7 @@ settings:
      caption: MariaDB Node
      values:
       - value: "${nodes.sqldb[0].id}"
-        caption: MariaDB Master 1
-      - value2: "${nodes.sqldb[1].id}"
-        caption: MariaDB Master 2
+      - value: "${nodes.sqldb[1].id}"
 
 #onInstall:
 
