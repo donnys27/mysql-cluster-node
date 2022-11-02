@@ -19,6 +19,7 @@ settings:
     - type: list
       caption: Delete Node
       name: dbnode
+      default: 0
       values:
         - value: 0
           caption: MariaDB Master 1
