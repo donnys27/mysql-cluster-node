@@ -4,19 +4,24 @@ name: MariaDB Node
 
 baseUrl: https://raw.githubusercontent.com/donnys27/mysql-cluster-node/master
 
-settings:
-  fields:
-   - type: list
-     name: nodeid
-     required: true
-     caption: MariaDB Node
-     values:
-      - value: "${nodes.sqldb[0].id}"
-      - value: "${nodes.sqldb[1].id}"
+globals:
+  DB_USER: root
+  DB_PASSWORD: wQrSbd4yGecJbStM
+  ORCHESTRATOR_USER: admin
+  ORCHESTRATOR_PASSWORD: 57uHSy4mt9d8
+  REPLICA_USER: repl-53252
+  REPLICA_PASSWORD: z62WnKjaGY9WHJA
+  MAX_REPL_LAG: 0
+  PATH: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0
 
-#onInstall:
+onInstall:
+  setNodeCount [${nodes.sqldb[1].id}]: 0
+  #- removeSlave:
+  #    id: "${nodes.sqldb[1].id}"
 
 actions:
-  deleteTable:
-    - cmd [${nodes.sqldb[0].id}]:
-       - mysql -uroot -pwQrSbd4yGecJbStM --execute="DROP DATABASE repltest"
+  removeSlave:
+    cmd [proxy]: |-
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
+      MYSQL_PWD=${globals.ORCHESTRATOR_PASSWORD} mysql -h 127.0.0.1 -P3360 -uadmin  -e "DELETE FROM orchestrator.database_instance where hostname='node${this.id}-${env.domain}';"
