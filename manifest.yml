@@ -13,25 +13,26 @@ globals:
   REPLICA_PASSWORD: z62WnKjaGY9WHJA
   MAX_REPL_LAG: 0
   PATH: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0
+  OLDNODE: 0
+  NEWNODE: 1
 
-settings:
-  fields:
-    - type: list
-      caption: Delete Node
-      name: dbnode
-      default: 0
-      values:
-        - value: 0
-          caption: MariaDB Master 1
-        - value: 1
-          caption: MariaDB Master 2
+# settings:
+#   fields:
+#     - type: list
+#       caption: Delete Node
+#       name: dbnode
+#       default: 0
+#       values:
+#         - value: 0
+#           caption: MariaDB Master 1
+#         - value: 1
+#           caption: MariaDB Master 2
 
 onInstall:
   - removeSlave:
       id: "${nodes.sqldb[1].id}"
-  - setNodeCount [sqldb]: 1
+  - setNodeCount [sqldb]: 0
   - setNodeCount [sqldb]: 2
-  - resetMySQL
 
 actions:
   removeSlave:
@@ -40,9 +41,4 @@ actions:
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
       MYSQL_PWD=${globals.ORCHESTRATOR_PASSWORD} mysql -h 127.0.0.1 -P3360 -uadmin  -e "DELETE FROM orchestrator.database_instance where hostname='node${this.id}-${env.domain}';"
 
-  resetMySQL:
-    - cmd [sqldb]:
-        - wget ${baseUrl}/scripts/resetmysql.sh -O ~/resetmysql.sh
-        - bash ~/resetmysql.sh
-    - cmd [sqldb]:
-        - mysql -u${globals.DB_USER} -p --execute="UPDATE mysql.user SET password = PASSWORD('${globals.DB_PASSWORD}') WHERE User = '${globals.DB_USER}';" && /etc/init.d/mysql restart
+  
