@@ -13,8 +13,6 @@ globals:
   REPLICA_PASSWORD: z62WnKjaGY9WHJA
   MAX_REPL_LAG: 0
   PATH: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0
-  OLDNODE: 0
-  NEWNODE: 1
 
 onInstall:
   - removeSlave:
@@ -23,15 +21,15 @@ onInstall:
   - setNodeCount [sqldb]: 2
   - setupMasters
   - replicate:
-      id: "${nodes.sqldb[${globals.OLDNODE}].id}"
-      masterId: "${nodes.sqldb[${globals.NEWNODE}].id}"
+      id: "${nodes.sqldb[0].id}"
+      masterId: "${nodes.sqldb[1].id}"
   - replicate:
-      id: "${nodes.sqldb[${globals.NEWNODE}].id}"
-      masterId: "${nodes.sqldb[${globals.OLDNODE}].id}"
+      id: "${nodes.sqldb[1].id}"
+      masterId: "${nodes.sqldb[0].id}"
   - addMaster:
-      id: "${nodes.sqldb[${globals.NEWNODE}].id}"
+      id: "${nodes.sqldb[1].id}"
   - addSlave:
-      id: "${nodes.sqldb[${globals.NEWNODE}].id}"
+      id: "${nodes.sqldb[1].id}"
 
 actions:
   addMaster:
@@ -66,10 +64,10 @@ actions:
 
   setupMasters:
     - setupMaster:
-        id: "${nodes.sqldb[${globals.NEWNODE}].id}"
+        id: "${nodes.sqldb[1].id}"
         increment: 2
     - setupReplication:
-        id: "${nodes.sqldb[${globals.NEWNODE}].id}"
+        id: "${nodes.sqldb[1].id}"
 
   setupMaster:
     - cmd [${this.id}]: |-
