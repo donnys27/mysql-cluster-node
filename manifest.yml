@@ -29,7 +29,8 @@ settings:
 onInstall:
   setNodeCount [sqldb]: "${settings.dbnode}"
   - removeSlave:
-     id: "${nodes.sqldb[${settings.dbnode}].id}"
+      id: "${nodes.sqldb[${settings.dbnode}].id}"
+  - resetMySQL
 
 actions:
   removeSlave:
@@ -37,3 +38,10 @@ actions:
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';"
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
       MYSQL_PWD=${globals.ORCHESTRATOR_PASSWORD} mysql -h 127.0.0.1 -P3360 -uadmin  -e "DELETE FROM orchestrator.database_instance where hostname='node${this.id}-${env.domain}';"
+
+  resetMySQL:
+    - cmd [sqldb]:
+        - wget ${baseUrl}/scripts/resetmysql.sh -O ~/resetmysql.sh
+        - bash ~/resetmysql.sh
+    - cmd [sqldb]:
+        - mysql -u${globals.DB_USER} -p --execute="UPDATE mysql.user SET password = PASSWORD('${globals.DB_PASSWORD}') WHERE User = '${globals.DB_USER}';" && /etc/init.d/mysql restart
