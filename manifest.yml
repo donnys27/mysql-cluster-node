@@ -16,29 +16,66 @@ globals:
   OLDNODE: 0
   NEWNODE: 1
 
-# settings:
-#   fields:
-#     - type: list
-#       caption: Delete Node
-#       name: dbnode
-#       default: 0
-#       values:
-#         - value: 0
-#           caption: MariaDB Master 1
-#         - value: 1
-#           caption: MariaDB Master 2
-
 onInstall:
   - removeSlave:
       id: "${nodes.sqldb[1].id}"
   - setNodeCount [sqldb]: 0
   - setNodeCount [sqldb]: 2
+  - setupMasters
+  - replicate:
+      id: "${nodes.sqldb[${globals.OLDNODE}].id}"
+      masterId: "${nodes.sqldb[${globals.NEWNODE}].id}"
+  - replicate:
+      id: "${nodes.sqldb[${globals.NEWNODE}].id}"
+      masterId: "${nodes.sqldb[${globals.OLDNODE}].id}"
+  - addMaster:
+      id: "${nodes.sqldb[${globals.NEWNODE}].id}"
+  - addSlave:
+      id: "${nodes.sqldb[${globals.NEWNODE}].id}"
 
 actions:
+  addMaster:
+    - cmd [proxy]: |-
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${this.id}', 3306);"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
+        MYSQL_PWD=${globals.DB_PASSWORD} mysql -u${globals.DB_USER} -hnode${this.id} -e "show slave hosts;"
+        /usr/local/orchestrator/orchestrator -c discover -i node${this.id} cli;
+
+  addSlave:
+    - cmd [proxy]: |-
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES (11, 'node${this.id}', 3306, '${globals.MAX_REPL_LAG}');"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
+
   removeSlave:
     cmd [proxy]: |-
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';"
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
       MYSQL_PWD=${globals.ORCHESTRATOR_PASSWORD} mysql -h 127.0.0.1 -P3360 -uadmin  -e "DELETE FROM orchestrator.database_instance where hostname='node${this.id}-${env.domain}';"
+
+  replicate:
+    - cmd [${this.id}]:
+       - mysqlreplicate --master=${globals.DB_USER}:${globals.DB_PASSWORD}@node${this.masterId}:3306 --slave=${globals.DB_USER}:${globals.DB_PASSWORD}@node${this.id}:3306 --rpl-user=${globals.REPLICA_USER}:${globals.REPLICA_PASSWORD} --start-from-beginning
+  
+  setupReplication:
+    - cmd [${this.id}]: |-
+        yum install https://downloads.mysql.com/archives/get/p/29/file/mysql-connector-python-8.0.11-1.el7.x86_64.rpm -y 
+        yum install https://downloads.mysql.com/archives/get/p/30/file/mysql-utilities-1.6.5-1.el7.noarch.rpm -y
+        ln -s /usr/lib/python2.7/site-packages/mysql/utilities /usr/lib64/python2.7/site-packages/mysql/utilities
+    - cmd [${this.id}]: |-
+        /etc/init.d/mysql restart
+
+  setupMasters:
+    - setupMaster:
+        id: "${nodes.sqldb[${globals.NEWNODE}].id}"
+        increment: 2
+    - setupReplication:
+        id: "${nodes.sqldb[${globals.NEWNODE}].id}"
+
+  setupMaster:
+    - cmd [${this.id}]: |-
+        wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
+        sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf; 
+        sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
+        sed -i "s/auto-increment-offset.*/auto-increment-offset = ${this.increment}/" /etc/mysql/conf.d/master.cnf
 
   
