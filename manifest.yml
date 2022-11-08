@@ -27,9 +27,10 @@ settings:
           caption: MariaDB Master 2
 
 onInstall:
-  - setNodeCount [sqldb]: "${settings.dbnode}"
   - removeSlave:
-      id: "${nodes.sqldb[${settings.dbnode}].id}"
+      id: "${nodes.sqldb[1].id}"
+  - setNodeCount [sqldb]: 1
+  - setNodeCount [sqldb]: 2
   - resetMySQL
 
 actions:
